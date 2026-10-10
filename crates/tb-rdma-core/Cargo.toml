@@ -1,0 +1,9 @@
+[package]
+name = "tb-rdma-core"
+description = "Host-testable core: QP state machine, credits, routing, virtual ring"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tb-rdma-proto = { path = "../tb-rdma-proto" }

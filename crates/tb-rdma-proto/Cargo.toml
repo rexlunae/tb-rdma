@@ -1,0 +1,10 @@
+[package]
+name = "tb-rdma-proto"
+description = "Wire format for RDMA over USB4/Thunderbolt (core-only, provisional)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dev-dependencies]
+# Host-side oracle only: derives an independent wire layout to cross-check the codec.
+simple_endian = { version = "0.4.11", features = ["derive", "io-std"] }

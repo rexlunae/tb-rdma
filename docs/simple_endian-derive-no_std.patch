@@ -1,0 +1,146 @@
+diff --git a/simple_endian_derive/src/endianize.rs b/simple_endian_derive/src/endianize.rs
+index 723c6bc..23fdf73 100644
+--- a/simple_endian_derive/src/endianize.rs
++++ b/simple_endian_derive/src/endianize.rs
+@@ -791,7 +791,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                             }
+                         });
+ 
+-                        payload_union_fields.push(quote!(#v_payload_union_field: ::std::mem::ManuallyDrop<#v_payload_struct #ty_generics>));
++                        payload_union_fields.push(quote!(#v_payload_union_field: ::core::mem::ManuallyDrop<#v_payload_struct #ty_generics>));
+ 
+                         // Read arm: read payload struct, store in union.
+                         variant_arms_read.push(quote! {
+@@ -799,7 +799,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                                 let payload = #v_payload_struct { #(#reads,)* };
+                                 Ok(#wire_name {
+                                     tag: #v_tag_const.into(),
+-                                    payload: #payload_name { #v_payload_union_field: ::std::mem::ManuallyDrop::new(payload) },
++                                    payload: #payload_name { #v_payload_union_field: ::core::mem::ManuallyDrop::new(payload) },
+                                 })
+                             }
+                         });
+@@ -932,14 +932,14 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                             #vis struct #v_payload_struct #generics( #(pub #field_tys,)* );
+                         });
+ 
+-                        payload_union_fields.push(quote!(#v_payload_union_field: ::std::mem::ManuallyDrop<#v_payload_struct #ty_generics>));
++                        payload_union_fields.push(quote!(#v_payload_union_field: ::core::mem::ManuallyDrop<#v_payload_struct #ty_generics>));
+ 
+                         variant_arms_read.push(quote! {
+                             x if x == #v_tag_const => {
+                                 let payload = #v_payload_struct( #(#reads,)* );
+                                 Ok(#wire_name {
+                                     tag: #v_tag_const.into(),
+-                                    payload: #payload_name { #v_payload_union_field: ::std::mem::ManuallyDrop::new(payload) },
++                                    payload: #payload_name { #v_payload_union_field: ::core::mem::ManuallyDrop::new(payload) },
+                                 })
+                             }
+                         });
+@@ -997,6 +997,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                 #manual_eq_impls
+                 #manual_debug_impl
+ 
++                ::simple_endian::__endianize_io! {
+                 impl #impl_generics ::simple_endian::EndianRead for #wire_name #ty_generics #where_clause {
+                     fn read_from<R: ::std::io::Read + ?Sized>(reader: &mut R) -> ::std::io::Result<Self> {
+                         let tag: #tag_ty = ::simple_endian::read_specific(reader)?;
+@@ -1026,6 +1027,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                         }
+                     }
+                 }
++                }
+             };
+ 
+             let needs_default_impl = has_wire_default_attr(&input.attrs);
+@@ -1119,6 +1121,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+         });
+ 
+         quote! {
++          ::simple_endian::__endianize_io! {
+             impl #impl_generics ::simple_endian::EndianRead for #wire_name #ty_generics #where_clause {
+                 fn read_from<R: ::std::io::Read + ?Sized>(reader: &mut R) -> ::std::io::Result<Self> {
+                     Ok(Self { #(#reads,)* })
+@@ -1131,6 +1134,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                     Ok(())
+                 }
+             }
++          }
+         }
+     } else if !wire_field_indices.is_empty() && !is_union {
+         let tuple_reads = wire_field_indices
+@@ -1149,6 +1153,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+ 
+         // Tuple structs: same story, but with positional fields.
+         quote! {
++          ::simple_endian::__endianize_io! {
+             impl #impl_generics ::simple_endian::EndianRead for #wire_name #ty_generics #where_clause {
+                 fn read_from<R: ::std::io::Read + ?Sized>(reader: &mut R) -> ::std::io::Result<Self> {
+                     Ok(Self( #(#tuple_reads,)* ))
+@@ -1161,6 +1166,7 @@ fn derive_endianize_inner(input: &DeriveInput) -> Result<TokenStream, Error> {
+                     Ok(())
+                 }
+             }
++          }
+         }
+     } else {
+         // Unit structs or unions (no safe/default IO impls).
+diff --git a/src/lib.rs b/src/lib.rs
+index 0e8a45a..778ff33 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -185,6 +185,24 @@ pub use shorthand_types_nonzero::*;
+ #[cfg(feature = "derive")]
+ pub use simple_endian_derive::Endianize;
+ 
++/// Implementation detail of `#[derive(Endianize)]`: expands to its input when the
++/// `io-std` feature is enabled and to nothing otherwise, so derived wire types still
++/// compile in `no_std` builds (the generated `EndianRead`/`EndianWrite` impls need
++/// `std::io`). The cfg is evaluated here, in this crate, not in the user's crate.
++#[cfg(feature = "io-std")]
++#[doc(hidden)]
++#[macro_export]
++macro_rules! __endianize_io {
++    ($($t:tt)*) => { $($t)* };
++}
++
++#[cfg(not(feature = "io-std"))]
++#[doc(hidden)]
++#[macro_export]
++macro_rules! __endianize_io {
++    ($($t:tt)*) => {};
++}
++
+ /// Optional IO helpers gated by the `io` feature.
+ #[cfg(any(feature = "io-core", feature = "io-std"))]
+ mod io;
+diff --git a/tests/derive_no_std.rs b/tests/derive_no_std.rs
+new file mode 100644
+index 0000000..41d2b93
+--- /dev/null
++++ b/tests/derive_no_std.rs
+@@ -0,0 +1,24 @@
++// Derived wire types must compile and convert without `io-std` (no `std::io`).
++#![cfg(all(feature = "derive", not(feature = "io-std")))]
++
++use simple_endian::Endianize;
++
++#[derive(Endianize, Clone, Copy)]
++#[endian(le)]
++#[repr(C, packed)]
++#[wire_repr(C, packed)]
++#[wire_derive(Clone, Copy)]
++struct Hdr {
++    a: u8,
++    b: u16,
++    c: u32,
++}
++
++#[test]
++fn derive_without_io_std() {
++    let w = HdrWire::from(Hdr { a: 1, b: 0x0203, c: 0x0405_0607 });
++    assert_eq!(core::mem::size_of::<HdrWire>(), 7);
++    let n = Hdr::from(w);
++    let (a, b, c) = (n.a, n.b, n.c);
++    assert_eq!((a, b, c), (1, 0x0203, 0x0405_0607));
++}
