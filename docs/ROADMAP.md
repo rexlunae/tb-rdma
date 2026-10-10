@@ -19,6 +19,9 @@ Status key: [x] done, [ ] todo.
 - [ ] Check that the proto sources build under kbuild (needs a kernel tree)
 
 ## Phase 0.5: hardware measurements
+- [x] Read-only survey scripts for Linux and macOS (`tools/survey`)
+- [ ] Run the survey on every machine and fill in "Machines on hand" in `docs/HARDWARE.md`
+- [ ] Mac peer discovery test (`docs/PEER-TEST.md`): does the Mac offer RDMA to a non-TB5 Linux host?
 - [ ] Fill in the measured columns of `docs/HARDWARE.md` on every controller available (rings, E2E, frame limits, tunnel count, throughput)
 
 ## Phase 1+: see the design document (bindings, loopback ib device, tb-rc on hardware, Mac conformance, forwarding, hardening)
