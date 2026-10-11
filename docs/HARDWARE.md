@@ -28,6 +28,20 @@ Nothing in this document has been measured on hardware. "Verified" means a fact 
 
 Link rates are specification figures, not measurements. Earlier prototypes report roughly 16 to 20 Gb/s in practice, which suggests the NHI, not the link, is the ceiling.
 
+## Machines on hand
+
+Filled in from `tools/survey` reports. Values in italics are expectations, not survey results.
+
+| Machine | Arch | USB4/TB host interface | Generation / link | Security level | `hop_count` | `CONFIG_RUST` | Role |
+|---|---|---|---|---|---|---|---|
+| Ryzen 9 9950X desktop | x86_64 | *Depends on the motherboard; its 20 Gb/s port may be USB 3.2 Gen 2x2, which is not USB4* | | | | | Primary dev and kernel build host; link endpoint if USB4 |
+| Orange Pi 6 Plus 32 GB | arm64 | *Probably none* | | | | | ARM64 build and test host |
+| Ryzen 9 5900X desktop | x86_64 | *Probably none (AM4 has no USB4)* | | | | | Build host |
+| HP Spectre (Intel i7) | x86_64 | *Thunderbolt 3, firmware connection manager* | | | | | First link endpoint; Mac discovery test |
+| MacBook Pro, M5 Pro | arm64 | Thunderbolt 5 | | n/a | n/a | n/a | `tb-uc` reference peer |
+
+There is no second Thunderbolt 5 machine, so the first Mac test (`docs/PEER-TEST.md`) checks whether the Mac offers RDMA to a slower Linux peer at all.
+
 ## Measurements to take first
 
 On each controller you have, before the protocol work depends on it:

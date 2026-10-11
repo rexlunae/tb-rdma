@@ -19,7 +19,7 @@ Pre-alpha. Nothing here talks to hardware yet. The Apple wire format is unpublis
 
 ## Hardware
 
-See `docs/HARDWARE.md` for the expected support by generation (Thunderbolt 3, USB4, Thunderbolt 4, Thunderbolt 5) and the measurements still needed. Nothing has been tested on real hardware yet.
+See `docs/HARDWARE.md` for the expected support by generation (Thunderbolt 3, USB4, Thunderbolt 4, Thunderbolt 5) and the measurements still needed. Nothing has been tested on real hardware yet. `tools/survey` has read-only scripts that record what each machine supports, and `docs/PEER-TEST.md` is the first Mac discovery test.
 
 ## Build and test
 
