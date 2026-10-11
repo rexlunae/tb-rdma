@@ -79,11 +79,11 @@ for d in /sys/bus/pci/devices/*; do
 	fi
 done
 if [ "$found" = 0 ]; then
-	if have lspci || modprobe -R thunderbolt >/dev/null 2>&1; then
+	if have lspci; then
 		echo "none found: no USB4/Thunderbolt host interface on this machine"
 	else
-		echo "none found, but inconclusive: no lspci and no thunderbolt module to match"
-		echo "pre-USB4 controllers; install pciutils and rerun"
+		echo "none found, but inconclusive: without lspci, controllers the running"
+		echo "kernel does not recognize are missed; install pciutils and rerun"
 	fi
 fi
 
