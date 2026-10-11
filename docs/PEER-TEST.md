@@ -38,7 +38,8 @@ In the Mac `after.txt`, under "RDMA over Thunderbolt", look at the port state of
 
 | Linux sees a non-`network` service | Mac port state | Meaning |
 |---|---|---|
-| Yes | any | The Mac offers RDMA to this peer. `tb-uc` interop is possible on this hardware; next step is capturing frames. |
+| Yes | `PORT_ACTIVE` | Strong evidence the Mac offers RDMA to this peer. `tb-uc` interop looks possible on this hardware; next step is capturing frames to confirm the service is RDMA. |
+| Yes | `PORT_DOWN` | Inconclusive. The extra service may be RDMA waiting for a matching service on our side, or something unrelated. Compare with the same test with RDMA disabled on the Mac: a service that disappears is the RDMA one. |
 | No | `PORT_DOWN` | Either the Mac only advertises RDMA to peers that advertise it back, or only over Thunderbolt 5. Repeat once `tb-uc` can advertise a matching service; if still nothing, a Thunderbolt 5 Linux host is needed. |
 | No XDomain entry at all | n/a | Host-to-host link failed. Check the security level and dmesg before drawing conclusions. |
 

@@ -55,19 +55,37 @@ have rustc && echo "rustc: $(rustc --version)"
 
 section "PCI: USB4 / Thunderbolt host interfaces (NHI)"
 # USB4 host interfaces use class 0x0c0340. Pre-USB4 Thunderbolt NHIs use other
-# classes, so also list anything bound to the thunderbolt driver.
+# classes, so also match anything bound to the thunderbolt driver, anything
+# whose modalias resolves to it (works when it is built but not bound), and
+# lspci names mentioning an NHI (works when it is not built at all).
+is_nhi() {
+	local d=$1 class=$2 drv=$3
+	[ "$class" = "0x0c0340" ] || [ "$drv" = "thunderbolt" ] && return 0
+	if have modprobe && [ -r "$d/modalias" ]; then
+		modprobe -R "$(cat "$d/modalias")" 2>/dev/null | grep -qx thunderbolt && return 0
+	fi
+	have lspci && lspci -s "$(basename "$d")" 2>/dev/null | grep -qiE 'thunderbolt.*nhi|usb4 host|usb4 nhi' && return 0
+	return 1
+}
 found=0
 for d in /sys/bus/pci/devices/*; do
 	class=$(readattr "$d/class")
 	drv=""; [ -e "$d/driver" ] && drv=$(basename "$(readlink "$d/driver")")
-	if [ "$class" = "0x0c0340" ] || [ "$drv" = "thunderbolt" ]; then
+	if is_nhi "$d" "$class" "$drv"; then
 		found=1
 		slot=$(basename "$d")
 		echo "$slot class=$class vendor=$(readattr "$d/vendor") device=$(readattr "$d/device") driver=${drv:-none} power=$(readattr "$d/power/runtime_status")"
 		have lspci && lspci -nn -s "$slot" | sed 's/^/    /'
 	fi
 done
-[ "$found" = 1 ] || echo "none found: no USB4/Thunderbolt host interface on this machine"
+if [ "$found" = 0 ]; then
+	if have lspci || modprobe -R thunderbolt >/dev/null 2>&1; then
+		echo "none found: no USB4/Thunderbolt host interface on this machine"
+	else
+		echo "none found, but inconclusive: no lspci and no thunderbolt module to match"
+		echo "pre-USB4 controllers; install pciutils and rerun"
+	fi
+fi
 
 section "PCI: all USB controllers"
 if have lspci; then lspci -nn | grep -iE 'USB controller|Thunderbolt|USB4' || echo "none"
@@ -134,7 +152,7 @@ if [ "$NHI_CAPS" = 1 ]; then
 	elif ! have python3; then
 		echo "skipped: needs python3"
 	else
-		for d in /sys/bus/pci/drivers/thunderbolt/0000:*; do
+		for d in /sys/bus/pci/drivers/thunderbolt/*:*; do
 			[ -e "$d/resource0" ] || continue
 			python3 -I - "$d/resource0" <<'PY'
 import mmap, os, struct, sys
