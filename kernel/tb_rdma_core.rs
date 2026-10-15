@@ -31,10 +31,9 @@ module! {
     license: "GPL",
 }
 
-/// Opaque handle for a probed peer, owned by the C glue.
-pub struct TbRdma {
-    peers: PeerRegistry,
-}
+/// Module state. Per-peer state arrives with the xarray-backed table in v0.2
+/// (see kernel/README.md).
+pub struct TbRdma;
 
 extern "C" {
     /// Register the XDomain property directory and service driver. 0 on
@@ -42,15 +41,6 @@ extern "C" {
     fn tb_rdma_glue_init() -> c_int;
     /// Undo `tb_rdma_glue_init`.
     fn tb_rdma_glue_exit();
-}
-
-/// Minimal per-peer record for v0.1: identity only, no QP state yet.
-/// The C glue owns the lifetime; this registry only remembers the pointer
-/// for diagnostics. Replaced by the xarray-backed table in v0.2 (see
-/// kernel/README.md).
-struct PeerRegistry {
-    n: u32,
-    last_key: [u8; 9],
 }
 
 impl kernel::Module for TbRdma {
@@ -73,16 +63,14 @@ impl kernel::Module for TbRdma {
         }
 
         pr_info!("tb_rdma: registered service driver (key \"tb-rdma\")\n");
-        Ok(TbRdma {
-            peers: PeerRegistry { n: 0, last_key: [0; 9] },
-        })
+        Ok(TbRdma)
     }
 }
 
 impl Drop for TbRdma {
     fn drop(&mut self) {
         unsafe { tb_rdma_glue_exit() };
-        pr_info!("tb_rdma: unloaded ({} peer(s) seen)\n", self.peers.n);
+        pr_info!("tb_rdma: unloaded\n");
     }
 }
 

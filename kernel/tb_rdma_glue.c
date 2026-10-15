@@ -24,9 +24,9 @@ MODULE_DEVICE_TABLE(tbsvc, tb_rdma_ids);
 static int tb_rdma_glue_probe(struct tb_service *svc,
 			      const struct tb_service_id *id)
 {
-	return tb_rdma_peer_probe(svc, id->protocol_key, id->protocol_id,
-				  id->protocol_version, id->protocol_revision,
-				  svc->prtcstns);
+	/* The id table only matches on key and prtcid; report what the peer advertised. */
+	return tb_rdma_peer_probe(svc, svc->key, svc->prtcid, svc->prtcvers,
+				  svc->prtcrevs, svc->prtcstns);
 }
 
 static void tb_rdma_glue_remove(struct tb_service *svc)
@@ -60,13 +60,15 @@ int tb_rdma_glue_init(void)
 	if (!tb_rdma_dir)
 		return -ENOMEM;
 
-	if (tb_property_add_immediate(tb_rdma_dir, "prtcid", 1) ||
-	    tb_property_add_immediate(tb_rdma_dir, "prtcvers", 1) ||
-	    tb_property_add_immediate(tb_rdma_dir, "prtcrevs", 1) ||
-	    tb_property_add_immediate(tb_rdma_dir, "prtcstns", 0)) {
-		ret = -EINVAL;
+	ret = tb_property_add_immediate(tb_rdma_dir, "prtcid", 1);
+	if (!ret)
+		ret = tb_property_add_immediate(tb_rdma_dir, "prtcvers", 1);
+	if (!ret)
+		ret = tb_property_add_immediate(tb_rdma_dir, "prtcrevs", 1);
+	if (!ret)
+		ret = tb_property_add_immediate(tb_rdma_dir, "prtcstns", 0);
+	if (ret)
 		goto err_free;
-	}
 
 	ret = tb_register_property_dir("tb-rdma", tb_rdma_dir);
 	if (ret)
