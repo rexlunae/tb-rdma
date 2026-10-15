@@ -1,4 +1,6 @@
-# Kernel module (not started)
+# Kernel module
+
+Status: v0.1 loads, runs the codec selftest and registers the `tb-rdma` XDomain service. Build and load steps are in [BUILD.md](BUILD.md).
 
 Layering: `tb-rdma-proto` stays a pure `core` crate (no kernel dependency) so the same source is host-testable, fuzzable and usable by Mac capture tooling. Everything stateful lives in the kernel layer and should be written against the in-tree Rust `kernel` crate, not `std` or hand-rolled equivalents.
 
