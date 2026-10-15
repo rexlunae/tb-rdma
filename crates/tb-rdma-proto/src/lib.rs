@@ -6,6 +6,13 @@
 //! All multi-byte fields are little-endian. `no_std`, zero dependencies.
 #![no_std]
 
+// When this file is included as a module of another crate (kbuild's
+// -Zcrate-attr=no_std puts the prelude import at the crate root only),
+// re-import the core prelude so Result/Option/matches!/derive resolve.
+// Harmless when built as a standalone crate: same items, glob imports of
+// already-in-scope names are ignored.
+use core::prelude::v1::*;
+
 // Hand-written little-endian codec built only on `core`, so the same source
 // can be compiled by kbuild inside the kernel (no std, no dependencies, no
 // proc-macros). The `simple_endian` derive is used only in tests/oracle.rs to

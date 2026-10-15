@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# tb_rdma out-of-tree module: one Rust object (codec + selftest) and one C
+# object (Thunderbolt service/property glue), linked into a single .ko.
+
+obj-m += tb_rdma.o
+tb_rdma-y := tb_rdma_core.o tb_rdma_glue.o
+
+# The included proto sources carry an inner `#![no_std]` which is only legal
+# at the crate root; kbuild's -Zcrate-attr=no_std supplies the root one.
+RUSTFLAGS_EXTRA :=
